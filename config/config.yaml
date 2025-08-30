@@ -1,0 +1,231 @@
+# Healthcare Data Platform Configuration
+# Self-healing ingestion and quality platform for Medicaid/Medicare feeds
+
+# Databricks Configuration
+databricks:
+  host: "https://your-workspace.cloud.databricks.com"
+  token: "${DATABRICKS_TOKEN}"  # Set via environment variable
+  workspace_id: "${DATABRICKS_WORKSPACE_ID}"
+  
+# Unity Catalog Configuration  
+unity_catalog:
+  catalog_name: "healthcare_data"
+  default_storage_location: "s3://healthcare-data-platform/catalog/"
+  
+# Spark Configuration
+spark:
+  version: "13.3.x-scala2.12"
+  driver_memory: "8g"
+  executor_memory: "16g"
+  executor_cores: 4
+  adaptive_enabled: true
+  photon_enabled: true
+  
+# Pipeline Configuration
+pipelines:
+  # Medicaid Claims Pipeline
+  medicaid_claims:
+    source_path: "s3://healthcare-raw-data/medicaid/claims/"
+    target_table: "healthcare_data.silver.medicaid_claims"
+    schedule: "0 */6 * * *"  # Every 6 hours
+    cluster_config:
+      node_type: "i3.xlarge"
+      min_workers: 2
+      max_workers: 10
+    quality_thresholds:
+      min_quality_score: 0.85
+      max_anomaly_percentage: 5.0
+      max_stale_percentage: 10.0
+      
+  # Medicare Claims Pipeline  
+  medicare_claims:
+    source_path: "s3://healthcare-raw-data/medicare/claims/"
+    target_table: "healthcare_data.silver.medicare_claims"
+    schedule: "0 */4 * * *"  # Every 4 hours
+    cluster_config:
+      node_type: "i3.xlarge"  
+      min_workers: 3
+      max_workers: 12
+    quality_thresholds:
+      min_quality_score: 0.87
+      max_anomaly_percentage: 4.0
+      max_stale_percentage: 8.0
+      
+  # Provider Data Pipeline
+  provider_data:
+    source_path: "s3://healthcare-raw-data/providers/"
+    target_table: "healthcare_data.silver.providers"
+    schedule: "0 6 * * *"  # Daily at 6 AM
+    cluster_config:
+      node_type: "i3.large"
+      min_workers: 1
+      max_workers: 4
+    quality_thresholds:
+      min_quality_score: 0.90
+      max_anomaly_percentage: 2.0
+      max_stale_percentage: 24.0
+
+# Data Quality Configuration
+data_quality:
+  # Healthcare-specific validation rules
+  validation_schemas:
+    medicaid_claims:
+      member_id: "member_id"
+      provider_npi: "npi"
+      diagnosis_code: "icd10_diagnosis"
+      procedure_code: "cpt_procedure"
+      date_of_service: "date_of_service"
+      claim_amount: "claim_amount"
+      place_of_service: "place_of_service"
+      
+    medicare_claims:
+      member_id: "member_id"
+      provider_npi: "npi"
+      diagnosis_code: "icd10_diagnosis"
+      procedure_code: "cpt_procedure"
+      date_of_service: "date_of_service"
+      claim_amount: "claim_amount"
+      provider_taxonomy: "provider_taxonomy"
+      place_of_service: "place_of_service"
+      
+  # Monitoring configuration
+  monitoring:
+    quality_check_frequency: "hourly"
+    alert_thresholds:
+      critical_quality_score: 0.70
+      warning_quality_score: 0.80
+      high_anomaly_rate: 0.10
+    notification_channels:
+      - type: "email"
+        recipients: ["data-team@healthcare.com", "ops-team@healthcare.com"]
+      - type: "slack"
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+
+# Schema Registry Configuration
+schema_registry:
+  evolution_mode: "forward_compatible"
+  validation_mode: "strict"
+  auto_register: true
+  compatibility_check: true
+  
+# Self-Healing Configuration
+self_healing:
+  # Retry configuration
+  retry:
+    max_retries: 3
+    base_delay_seconds: 60
+    max_delay_seconds: 1800
+    jitter_enabled: true
+    
+  # Auto-scaling configuration
+  auto_scaling:
+    enabled: true
+    scale_up_threshold: 0.80  # CPU/Memory utilization
+    scale_down_threshold: 0.30
+    scale_up_increment: 2     # Number of workers to add
+    scale_down_increment: 1   # Number of workers to remove
+    cooldown_minutes: 10      # Wait time between scaling events
+    
+  # Schema drift handling
+  schema_drift:
+    auto_adapt: true
+    breaking_change_action: "quarantine"  # quarantine, fail, ignore
+    notification_required: true
+    
+  # Cost optimization
+  cost_optimization:
+    spot_instances: true
+    spot_bid_percentage: 70
+    auto_termination_minutes: 30
+    idle_timeout_minutes: 15
+
+# Monitoring & Alerting
+monitoring:
+  # Dashboard configuration
+  dashboard:
+    refresh_interval_seconds: 30
+    data_retention_days: 90
+    
+  # Metrics collection
+  metrics:
+    enabled: true
+    export_interval_seconds: 60
+    custom_metrics_enabled: true
+    
+  # Health checks
+  health_checks:
+    pipeline_health_check_minutes: 5
+    data_freshness_check_minutes: 15
+    quality_check_minutes: 30
+    
+  # Storage locations
+  storage:
+    metrics_table: "healthcare_data.monitoring.pipeline_metrics"
+    quality_table: "healthcare_data.monitoring.data_quality_metrics"
+    alerts_table: "healthcare_data.monitoring.quality_alerts"
+    events_table: "healthcare_data.monitoring.pipeline_events"
+
+# Logging Configuration  
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - type: "console"
+    - type: "file" 
+      filename: "/tmp/healthcare-pipeline.log"
+      max_size_mb: 100
+      backup_count: 5
+    - type: "databricks"  # Log to Databricks cluster logs
+
+# Security Configuration
+security:
+  # Encryption
+  encryption:
+    at_rest: true
+    in_transit: true
+    key_management: "databricks_managed"  # or "customer_managed"
+    
+  # Access control
+  access_control:
+    rbac_enabled: true
+    table_acls_enabled: true
+    column_level_security: true
+    
+  # Data classification
+  data_classification:
+    phi_detection: true
+    pii_detection: true
+    automatic_tagging: true
+    masking_rules:
+      member_id: "hash"
+      ssn: "mask"
+      phone: "partial_mask"
+
+# Environment-specific configurations
+environments:
+  development:
+    databricks:
+      host: "https://dev-workspace.cloud.databricks.com"
+    unity_catalog:
+      catalog_name: "healthcare_data_dev"
+    cost_optimization:
+      spot_instances: true
+      auto_termination_minutes: 15
+      
+  staging:  
+    databricks:
+      host: "https://staging-workspace.cloud.databricks.com"
+    unity_catalog:
+      catalog_name: "healthcare_data_staging"
+    cost_optimization:
+      spot_instances: true
+      auto_termination_minutes: 30
+      
+  production:
+    databricks:
+      host: "https://prod-workspace.cloud.databricks.com"
+    unity_catalog:
+      catalog_name: "healthcare_data_prod"
+    cost_optimization:
+      spot_instances: false  # Use on-demand for production
+      auto_termination_minutes: 60
