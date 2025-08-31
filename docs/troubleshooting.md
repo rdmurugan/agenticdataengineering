@@ -96,7 +96,7 @@ HTTP 403: Access denied to workspace
    ```
 
 3. Regenerate token if needed:
-   - Go to Databricks workspace ’ User Settings ’ Access Tokens
+   - Go to Databricks workspace â€™ User Settings â€™ Access Tokens
    - Generate new Personal Access Token
    - Update `.env` file
 
@@ -875,13 +875,8 @@ A: Supported formats:
 ### Contact Information
 
 **Technical Support:**
-- **Email**: support@your-company.com
+- **Email**: durai@infinidatum.net
 - **Slack**: #agentic-data-engineering
-- **Emergency**: +1-800-DATA-HELP
-
-**Business Support:**
-- **Account Manager**: account-manager@your-company.com
-- **Professional Services**: ps@your-company.com
 
 ### Escalation Procedures
 
