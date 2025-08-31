@@ -1,4 +1,4 @@
-# 🏥 Agentic Data Engineering Platform
+# 🏥 Healthcare Agentic Data Engineering Platform
 
 **Self-Healing Medicaid/Medicare Feed Processing**
 
@@ -284,25 +284,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [Read the Docs](https://agentic-data-engineering.readthedocs.io/)
 - **Issues**: [GitHub Issues](https://github.com/your-org/agentic-data-engineering/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-org/agentic-data-engineering/discussions)
-- **Email**: data-platform@healthcare.com
-
-## 📈 Roadmap
-
-### Q1 2024
-- [ ] Real-time streaming ingestion
-- [ ] Advanced ML-based anomaly detection
-- [ ] Multi-cloud support (Azure, GCP)
-
-### Q2 2024
-- [ ] FHIR format support
-- [ ] Advanced cost optimization ML models
-- [ ] Integration with major EHR systems
-
-### Q3 2024
-- [ ] GraphQL API layer
-- [ ] Advanced data lineage visualization
-- [ ] Automated data discovery
-
+- **Email**: durai@infinidatum.net
 ---
 
 **Built with ❤️ for Healthcare Data Teams**
