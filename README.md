@@ -1,3 +1,10 @@
+
+
+# 🏥 About Author
+Agentic Data Engineering for Healthcare is developed and maintained by Durai Rajamanickam. Reachable at durai@infinidatum.net
+
+LinkedIn: linkedin.com/in/durai-rajamanickam
+
 # 🏥 Agentic Data Engineering Platform
 
 ## Self-Healing Healthcare Data Processing for Medicaid/Medicare
