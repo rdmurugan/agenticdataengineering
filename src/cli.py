@@ -9,13 +9,37 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional
-from databricks.sdk import WorkspaceClient
-from pyspark.sql import SparkSession
 
-from src.agents.ingestion import AutoLoaderAgent, SchemaDriftDetector
-from src.agents.quality import DLTQualityAgent, LakehouseMonitor
-from src.agents.orchestration import JobsOrchestrator, AdaptiveClusterManager, RetryHandler
-from src.databricks_hooks import UnityCatalogManager, DeltaLiveTablesManager
+try:
+    from databricks.sdk import WorkspaceClient
+    DATABRICKS_AVAILABLE = True
+except ImportError:
+    DATABRICKS_AVAILABLE = False
+    WorkspaceClient = None
+
+try:
+    from pyspark.sql import SparkSession
+    PYSPARK_AVAILABLE = True
+except ImportError:
+    PYSPARK_AVAILABLE = False
+    SparkSession = None
+
+# Conditional imports for agents - only import if dependencies are available
+if DATABRICKS_AVAILABLE and PYSPARK_AVAILABLE:
+    from src.agents.ingestion import AutoLoaderAgent, SchemaDriftDetector
+    from src.agents.quality import DLTQualityAgent, LakehouseMonitor
+    from src.agents.orchestration import JobsOrchestrator, AdaptiveClusterManager, RetryHandler
+    from src.databricks_hooks import UnityCatalogManager, DeltaLiveTablesManager
+else:
+    # Mock classes for when dependencies are not available
+    class MockAgent:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    AutoLoaderAgent = SchemaDriftDetector = MockAgent
+    DLTQualityAgent = LakehouseMonitor = MockAgent
+    JobsOrchestrator = AdaptiveClusterManager = RetryHandler = MockAgent
+    UnityCatalogManager = DeltaLiveTablesManager = MockAgent
 
 
 def load_config(config_path: str = "config/config.yaml") -> Dict[str, Any]:
@@ -24,13 +48,19 @@ def load_config(config_path: str = "config/config.yaml") -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
-def get_workspace_client() -> WorkspaceClient:
+def get_workspace_client():
     """Get authenticated Databricks workspace client"""
+    if not DATABRICKS_AVAILABLE:
+        click.echo("❌ Databricks SDK not available. Install it with: pip install databricks-sdk")
+        return None
     return WorkspaceClient()
 
 
-def get_spark_session() -> SparkSession:
+def get_spark_session():
     """Get Spark session"""
+    if not PYSPARK_AVAILABLE:
+        click.echo("❌ PySpark not available. Install it with: pip install pyspark")
+        return None
     return SparkSession.builder.getOrCreate()
 
 

@@ -1,0 +1,583 @@
+# Comprehensive Data Quality Configuration
+# Healthcare-specific data quality rules, thresholds, and validation frameworks
+
+# Global Quality Thresholds
+global_thresholds:
+  # Overall data quality scores (0.0 - 1.0)
+  critical_quality_score: 0.60    # Below this triggers critical alerts
+  warning_quality_score: 0.80     # Below this triggers warnings
+  target_quality_score: 0.95      # Target quality level
+  excellent_quality_score: 0.98   # Excellent quality benchmark
+  
+  # Completeness thresholds
+  critical_completeness: 0.70      # Critical missing data threshold
+  warning_completeness: 0.85       # Warning missing data threshold
+  target_completeness: 0.95        # Target completeness level
+  
+  # Validity thresholds
+  critical_validity: 0.75          # Critical invalid data threshold
+  warning_validity: 0.90           # Warning invalid data threshold
+  target_validity: 0.98            # Target validity level
+  
+  # Consistency thresholds
+  critical_consistency: 0.80       # Critical inconsistency threshold
+  warning_consistency: 0.92        # Warning inconsistency threshold
+  target_consistency: 0.98         # Target consistency level
+  
+  # Accuracy thresholds
+  critical_accuracy: 0.85          # Critical inaccuracy threshold
+  warning_accuracy: 0.95           # Warning inaccuracy threshold
+  target_accuracy: 0.99            # Target accuracy level
+  
+  # Timeliness thresholds (hours)
+  critical_data_age_hours: 48      # Data older than this is critical
+  warning_data_age_hours: 24       # Data older than this triggers warning
+  target_data_age_hours: 6         # Target data freshness
+  
+  # Uniqueness thresholds
+  critical_duplicate_rate: 0.10    # Above 10% duplicates is critical
+  warning_duplicate_rate: 0.05     # Above 5% duplicates triggers warning
+  target_duplicate_rate: 0.01      # Target duplicate rate
+  
+  # Volume thresholds (percentage change from baseline)
+  critical_volume_change: 0.50     # 50% change from baseline
+  warning_volume_change: 0.25      # 25% change from baseline
+  expected_volume_variance: 0.10   # Expected daily variance
+
+# Healthcare-Specific Quality Rules
+healthcare_quality_rules:
+  
+  # Member/Patient Data Quality
+  member_data:
+    # Required fields
+    required_fields:
+      - member_id
+      - first_name
+      - last_name
+      - date_of_birth
+      - gender
+    
+    # Field-specific validation rules
+    field_validations:
+      member_id:
+        # Multiple ID formats supported
+        patterns:
+          - "^[0-9]{9,12}$"                    # 9-12 digits
+          - "^[A-Z]{1,3}[0-9]{6,9}$"          # State prefix + digits
+          - "^[A-Z][0-9]{8}[A-Z]$"            # New Medicare format
+        max_length: 15
+        min_length: 9
+        null_allowed: false
+        blank_allowed: false
+        
+      ssn:
+        pattern: "^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$"
+        encryption_required: true
+        null_allowed: true  # Some states don't require SSN
+        
+      date_of_birth:
+        format: "YYYY-MM-DD"
+        min_date: "1900-01-01"
+        max_date: "current_date"
+        null_allowed: false
+        
+      gender:
+        allowed_values: ["M", "F", "U", "X"]  # Include non-binary options
+        null_allowed: true
+        
+      phone:
+        pattern: "^\\+?1?[0-9]{10}$"
+        null_allowed: true
+        
+      email:
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        null_allowed: true
+        
+      zip_code:
+        pattern: "^[0-9]{5}(-[0-9]{4})?$"
+        null_allowed: false
+        
+    # Business rule validations
+    business_rules:
+      - name: "valid_age_range"
+        description: "Age must be between 0-120 years"
+        rule: "DATEDIFF(current_date(), date_of_birth) / 365.25 BETWEEN 0 AND 120"
+        severity: "critical"
+        
+      - name: "future_birth_date"
+        description: "Birth date cannot be in the future"
+        rule: "date_of_birth <= current_date()"
+        severity: "critical"
+        
+      - name: "consistent_gender_coding"
+        description: "Gender should use standard codes"
+        rule: "gender IN ('M', 'F', 'U', 'X') OR gender IS NULL"
+        severity: "warning"
+
+  # Claims Data Quality
+  claims_data:
+    required_fields:
+      - claim_id
+      - member_id
+      - provider_npi
+      - date_of_service
+      - diagnosis_code
+      - procedure_code
+      - claim_amount
+      
+    field_validations:
+      claim_id:
+        pattern: "^[A-Z0-9]{10,20}$"
+        unique: true
+        null_allowed: false
+        
+      provider_npi:
+        pattern: "^[0-9]{10}$"
+        luhn_check: true  # NPI uses Luhn algorithm
+        null_allowed: false
+        blacklist:  # Invalid NPIs
+          - "0000000000"
+          - "9999999999"
+          
+      diagnosis_code:
+        patterns:
+          - "^[A-TV-Z][0-9][A-Z0-9](\\.[A-Z0-9]{0,4})?$"  # ICD-10
+          - "^[0-9]{3}(\\.[0-9]{0,2})?$"                   # ICD-9 (legacy)
+        null_allowed: false
+        
+      procedure_code:
+        patterns:
+          - "^[0-9]{5}$"        # CPT codes
+          - "^[A-V][0-9]{4}$"   # HCPCS Level II
+        null_allowed: false
+        
+      date_of_service:
+        format: "YYYY-MM-DD"
+        min_date: "2020-01-01"  # Reasonable minimum
+        max_date: "current_date + 30"  # Allow some future dates
+        null_allowed: false
+        
+      claim_amount:
+        data_type: "decimal"
+        min_value: 0.00
+        max_value: 1000000.00  # $1M maximum
+        precision: 2
+        null_allowed: false
+        
+      place_of_service:
+        pattern: "^[0-9]{2}$"
+        range: [1, 99]
+        null_allowed: false
+        
+    business_rules:
+      - name: "service_date_vs_eligibility"
+        description: "Service date must be within member eligibility period"
+        rule: |
+          EXISTS (
+            SELECT 1 FROM member_eligibility e
+            WHERE e.member_id = claims.member_id
+            AND claims.date_of_service BETWEEN e.start_date AND COALESCE(e.end_date, '2099-12-31')
+          )
+        severity: "critical"
+        
+      - name: "provider_active_status"
+        description: "Provider must be active on service date"
+        rule: |
+          EXISTS (
+            SELECT 1 FROM providers p
+            WHERE p.npi = claims.provider_npi
+            AND p.status = 'ACTIVE'
+            AND (p.termination_date IS NULL OR p.termination_date > claims.date_of_service)
+          )
+        severity: "warning"
+        
+      - name: "reasonable_claim_amount"
+        description: "Claim amount should be reasonable for procedure"
+        rule: "claim_amount BETWEEN 1.00 AND 100000.00"
+        severity: "warning"
+        
+      - name: "duplicate_claim_check"
+        description: "Check for potential duplicate claims"
+        rule: |
+          NOT EXISTS (
+            SELECT 1 FROM claims c2
+            WHERE c2.member_id = claims.member_id
+            AND c2.provider_npi = claims.provider_npi
+            AND c2.date_of_service = claims.date_of_service
+            AND c2.procedure_code = claims.procedure_code
+            AND c2.claim_id != claims.claim_id
+            AND c2.created_timestamp < claims.created_timestamp
+          )
+        severity: "critical"
+
+  # Provider Data Quality
+  provider_data:
+    required_fields:
+      - provider_npi
+      - provider_name
+      - provider_type
+      - license_number
+      
+    field_validations:
+      provider_npi:
+        pattern: "^[0-9]{10}$"
+        luhn_check: true
+        unique: true
+        null_allowed: false
+        
+      provider_name:
+        min_length: 2
+        max_length: 200
+        null_allowed: false
+        
+      provider_type:
+        allowed_values:
+          - "Individual"
+          - "Organization"
+        null_allowed: false
+        
+      taxonomy_code:
+        pattern: "^[A-Z0-9]{10}$"
+        null_allowed: true
+        
+      license_number:
+        min_length: 5
+        max_length: 20
+        null_allowed: true
+        
+      license_state:
+        pattern: "^[A-Z]{2}$"
+        null_allowed: true
+        
+    business_rules:
+      - name: "license_expiration"
+        description: "License should not be expired"
+        rule: "license_expiration_date IS NULL OR license_expiration_date > current_date()"
+        severity: "warning"
+        
+      - name: "taxonomy_validation"
+        description: "Taxonomy code should be valid"
+        rule: |
+          taxonomy_code IS NULL OR 
+          EXISTS (SELECT 1 FROM valid_taxonomy_codes v WHERE v.code = provider_data.taxonomy_code)
+        severity: "warning"
+
+# Quality Dimensions Configuration
+quality_dimensions:
+  
+  completeness:
+    weight: 0.25  # 25% of overall quality score
+    metrics:
+      - name: "null_percentage"
+        description: "Percentage of null values"
+        calculation: "COUNT(CASE WHEN {column} IS NULL THEN 1 END) / COUNT(*) * 100"
+        threshold_good: 5.0    # < 5% nulls is good
+        threshold_fair: 15.0   # < 15% nulls is fair
+        
+      - name: "blank_percentage" 
+        description: "Percentage of blank/empty values"
+        calculation: "COUNT(CASE WHEN TRIM({column}) = '' THEN 1 END) / COUNT(*) * 100"
+        threshold_good: 3.0
+        threshold_fair: 10.0
+        
+  validity:
+    weight: 0.30  # 30% of overall quality score
+    metrics:
+      - name: "format_compliance"
+        description: "Percentage of values matching expected format"
+        calculation: "COUNT(CASE WHEN {column} RLIKE '{pattern}' THEN 1 END) / COUNT(*) * 100"
+        threshold_good: 95.0
+        threshold_fair: 85.0
+        
+      - name: "range_compliance"
+        description: "Percentage of values within expected range"
+        calculation: "COUNT(CASE WHEN {column} BETWEEN {min} AND {max} THEN 1 END) / COUNT(*) * 100"
+        threshold_good: 98.0
+        threshold_fair: 90.0
+        
+  consistency:
+    weight: 0.20  # 20% of overall quality score
+    metrics:
+      - name: "cross_field_consistency"
+        description: "Consistency between related fields"
+        threshold_good: 95.0
+        threshold_fair: 85.0
+        
+      - name: "reference_integrity"
+        description: "Foreign key reference integrity"
+        threshold_good: 99.0
+        threshold_fair: 95.0
+        
+  accuracy:
+    weight: 0.15  # 15% of overall quality score
+    metrics:
+      - name: "business_rule_compliance"
+        description: "Compliance with business rules"
+        threshold_good: 96.0
+        threshold_fair: 88.0
+        
+  timeliness:
+    weight: 0.10  # 10% of overall quality score
+    metrics:
+      - name: "data_freshness"
+        description: "How recent the data is"
+        calculation: "AVG(DATEDIFF(current_timestamp(), {timestamp_column}))"
+        threshold_good: 6.0    # < 6 hours is good
+        threshold_fair: 24.0   # < 24 hours is fair
+
+# Anomaly Detection Configuration
+anomaly_detection:
+  
+  # Statistical anomaly detection
+  statistical_methods:
+    
+    # Z-score based detection
+    z_score:
+      enabled: true
+      threshold: 3.0          # Values beyond 3 standard deviations
+      min_sample_size: 100    # Minimum samples needed
+      
+    # Interquartile Range (IQR) method
+    iqr:
+      enabled: true
+      multiplier: 1.5         # IQR * 1.5 for outlier detection
+      
+    # Isolation Forest (for multivariate anomalies)
+    isolation_forest:
+      enabled: true
+      contamination: 0.1      # Expected proportion of anomalies
+      n_estimators: 100
+      
+  # Domain-specific anomaly rules
+  domain_rules:
+    
+    claim_amount_anomalies:
+      - name: "unusually_high_claim"
+        condition: "claim_amount > (SELECT percentile_cont(0.99) WITHIN GROUP (ORDER BY claim_amount) FROM claims_history)"
+        severity: "medium"
+        
+      - name: "zero_dollar_claim"
+        condition: "claim_amount = 0"
+        severity: "high"
+        
+      - name: "claim_amount_spike"
+        condition: |
+          claim_amount > (
+            SELECT AVG(claim_amount) + 3 * STDDEV(claim_amount)
+            FROM claims_history
+            WHERE procedure_code = current.procedure_code
+          )
+        severity: "medium"
+        
+    member_behavior_anomalies:
+      - name: "excessive_utilization"
+        condition: |
+          (SELECT COUNT(*) FROM claims WHERE member_id = current.member_id 
+           AND date_of_service >= current_date() - 30) > 50
+        severity: "high"
+        
+      - name: "provider_shopping"
+        condition: |
+          (SELECT COUNT(DISTINCT provider_npi) FROM claims 
+           WHERE member_id = current.member_id 
+           AND date_of_service >= current_date() - 30) > 10
+        severity: "medium"
+
+# Quality Monitoring Schedule
+monitoring_schedule:
+  
+  # Real-time monitoring (streaming)
+  real_time:
+    enabled: true
+    check_interval_seconds: 60
+    metrics:
+      - "completeness"
+      - "format_validation"
+      - "critical_business_rules"
+      
+  # Batch monitoring
+  batch:
+    daily:
+      enabled: true
+      schedule: "0 2 * * *"  # 2 AM daily
+      metrics:
+        - "all_quality_dimensions"
+        - "anomaly_detection"
+        - "trend_analysis"
+        
+    weekly:
+      enabled: true
+      schedule: "0 3 * * 0"  # 3 AM Sunday
+      metrics:
+        - "comprehensive_profiling"
+        - "cross_table_consistency"
+        - "historical_trends"
+        
+    monthly:
+      enabled: true
+      schedule: "0 4 1 * *"  # 4 AM first of month
+      metrics:
+        - "full_quality_assessment"
+        - "quality_improvement_analysis"
+        - "compliance_reporting"
+
+# Alert Configuration
+alerting:
+  
+  # Alert channels
+  channels:
+    email:
+      enabled: true
+      recipients:
+        - "data-quality-team@healthcare.com"
+        - "ops-team@healthcare.com"
+      smtp_server: "${EMAIL_SMTP_SERVER}"
+      smtp_port: 587
+      
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#data-quality-alerts"
+      
+    pagerduty:
+      enabled: false
+      api_key: "${PAGERDUTY_API_KEY}"
+      
+  # Alert rules
+  rules:
+    critical:
+      conditions:
+        - "overall_quality_score < 0.60"
+        - "completeness_score < 0.70"
+        - "validity_score < 0.75"
+        - "critical_business_rule_violations > 0"
+      immediate: true
+      channels: ["email", "slack", "pagerduty"]
+      
+    warning:
+      conditions:
+        - "overall_quality_score < 0.80"
+        - "completeness_score < 0.85"
+        - "data_age_hours > 24"
+        - "anomaly_count > 100"
+      delay_minutes: 15  # Wait 15 minutes before alerting
+      channels: ["email", "slack"]
+      
+    info:
+      conditions:
+        - "quality_score_trending_down"
+        - "new_anomaly_pattern_detected"
+      delay_minutes: 60  # Wait 1 hour before alerting
+      channels: ["slack"]
+      
+  # Alert suppression
+  suppression:
+    duplicate_alert_window_minutes: 60  # Don't repeat same alert for 1 hour
+    maintenance_mode_enabled: false
+    quiet_hours:
+      enabled: true
+      start: "22:00"  # 10 PM
+      end: "06:00"    # 6 AM
+      timezone: "UTC"
+
+# Quality Improvement
+quality_improvement:
+  
+  # Auto-remediation rules
+  auto_remediation:
+    enabled: true
+    
+    # Data correction rules
+    corrections:
+      - name: "standardize_phone_format"
+        condition: "phone IS NOT NULL AND phone NOT RLIKE '^\\+?1?[0-9]{10}$'"
+        action: "REGEXP_REPLACE(REGEXP_REPLACE(phone, '[^0-9]', ''), '^1', '')"
+        
+      - name: "standardize_gender_codes"
+        condition: "UPPER(gender) IN ('MALE', 'M')"
+        action: "'M'"
+        
+      - name: "fix_date_formats"
+        condition: "date_of_service RLIKE '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'"
+        action: "DATE_FORMAT(STR_TO_DATE(date_of_service, '%m/%d/%Y'), '%Y-%m-%d')"
+        
+  # Quality quarantine
+  quarantine:
+    enabled: true
+    quarantine_table_suffix: "_quarantine"
+    
+    # Quarantine rules
+    rules:
+      - name: "critical_validation_failure"
+        condition: "quality_score < 0.60"
+        action: "quarantine"
+        
+      - name: "missing_required_fields"
+        condition: "member_id IS NULL OR claim_id IS NULL"
+        action: "quarantine"
+        
+      - name: "invalid_healthcare_codes"
+        condition: "NOT (diagnosis_code RLIKE '^[A-TV-Z][0-9]' OR procedure_code RLIKE '^[0-9]{5}$')"
+        action: "quarantine"
+        
+  # Data enrichment
+  enrichment:
+    enabled: true
+    
+    # Reference data lookups
+    lookups:
+      - name: "provider_details"
+        source_table: "reference.providers"
+        join_key: "provider_npi"
+        fields: ["provider_name", "specialty", "location"]
+        
+      - name: "diagnosis_descriptions"
+        source_table: "reference.icd10_codes" 
+        join_key: "diagnosis_code"
+        fields: ["diagnosis_description", "category"]
+
+# Reporting Configuration
+reporting:
+  
+  # Quality dashboards
+  dashboards:
+    executive:
+      refresh_interval_minutes: 60
+      metrics:
+        - "overall_quality_score"
+        - "quality_trends"
+        - "critical_issues_count"
+        - "cost_of_poor_quality"
+        
+    operational:
+      refresh_interval_minutes: 15
+      metrics:
+        - "real_time_quality_scores"
+        - "active_alerts"
+        - "data_freshness"
+        - "processing_volume"
+        
+    detailed:
+      refresh_interval_minutes: 5
+      metrics:
+        - "field_level_quality"
+        - "rule_violations"
+        - "anomaly_details"
+        - "quarantined_records"
+        
+  # Scheduled reports
+  scheduled_reports:
+    daily_quality_summary:
+      schedule: "0 8 * * *"  # 8 AM daily
+      recipients: ["data-team@healthcare.com"]
+      format: "pdf"
+      
+    weekly_quality_review:
+      schedule: "0 9 * * 1"  # 9 AM Monday
+      recipients: ["management@healthcare.com"]
+      format: "pdf"
+      
+    monthly_compliance_report:
+      schedule: "0 10 1 * *"  # 10 AM first of month
+      recipients: ["compliance@healthcare.com", "audit@healthcare.com"]
+      format: "pdf"
