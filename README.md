@@ -1,3 +1,10 @@
+
+
+# 🏥 About Author
+Agentic Data Engineering for Healthcare is developed and maintained by Durai Rajamanickam. Reachable at durai@infinidatum.net
+
+LinkedIn: linkedin.com/in/durai-rajamanickam
+
 # 🏥 Agentic Data Engineering Platform
 
 ## Self-Healing Healthcare Data Processing for Medicaid/Medicare
@@ -337,4 +344,5 @@ This project is licensed under the MIT License - see the **[LICENSE](LICENSE)** 
 <div align="center">
   <strong>Built with ❤️ for Healthcare Data Engineering</strong><br/>
   <em>Delivering reliable, cost-effective, and compliant healthcare data solutions</em>
+  <em>by Durai Rajamanickam (durai@infinidatum.net) www.linkedin.com/in/durai-rajamanickam</em>
 </div>
