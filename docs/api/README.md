@@ -338,7 +338,7 @@ Manage data quality alerts and thresholds.
     }
   ],
   "notification_config": {
-    "email_recipients": ["data-team@company.com"],
+    "email_recipients": ["durai@infinidatum.net"],
     "slack_channel": "#data-quality",
     "escalation_enabled": true,
     "escalation_delay_minutes": 15

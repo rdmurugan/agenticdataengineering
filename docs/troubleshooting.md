@@ -96,7 +96,7 @@ HTTP 403: Access denied to workspace
    ```
 
 3. Regenerate token if needed:
-   - Go to Databricks workspace ’ User Settings ’ Access Tokens
+   - Go to Databricks workspace ï¿½ User Settings ï¿½ Access Tokens
    - Generate new Personal Access Token
    - Update `.env` file
 
@@ -523,7 +523,7 @@ databricks unity-catalog catalogs list
 -- Grant column-level permissions
 GRANT SELECT(member_id, service_date, diagnosis_code) 
 ON TABLE healthcare_data.silver.claims 
-TO `analytics-team@company.com`;
+TO `durai@infinidatum.net`;
 
 -- Create dynamic view for PHI protection
 CREATE VIEW healthcare_data.gold.claims_deidentified AS
@@ -875,13 +875,13 @@ A: Supported formats:
 ### Contact Information
 
 **Technical Support:**
-- **Email**: support@your-company.com
+- **Email**: durai@infinidatum.net
 - **Slack**: #agentic-data-engineering
 - **Emergency**: +1-800-DATA-HELP
 
 **Business Support:**
-- **Account Manager**: account-manager@your-company.com
-- **Professional Services**: ps@your-company.com
+- **Account Manager**: durai@infinidatum.net
+- **Professional Services**: durai@infinidatum.net
 
 ### Escalation Procedures
 

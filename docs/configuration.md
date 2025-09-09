@@ -67,10 +67,10 @@ GCS_BUCKET=healthcare-data-platform
 # Email Notifications
 EMAIL_SMTP_SERVER=smtp.yourdomain.com
 EMAIL_SMTP_PORT=587
-EMAIL_USERNAME=your_email@company.com
+EMAIL_USERNAME=durai@infinidatum.net
 EMAIL_PASSWORD=your_email_password
-EMAIL_FROM_ADDRESS=data-platform@company.com
-EMAIL_RECIPIENTS=data-team@company.com,ops-team@company.com
+EMAIL_FROM_ADDRESS=durai@infinidatum.net
+EMAIL_RECIPIENTS=durai@infinidatum.net
 
 # Slack Integration
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL

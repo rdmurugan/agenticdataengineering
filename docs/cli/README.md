@@ -441,7 +441,7 @@ Examples:
   # Generate and email report
   python -m src.cli quality report \
     --format html \
-    --email-recipients data-team@company.com
+    --email-recipients durai@infinidatum.net
 ```
 
 ---
