@@ -341,7 +341,7 @@ This project is licensed under a Custom License - see the **[LICENSE](LICENSE)**
 
 - **Databricks** for the robust data platform
 - **Healthcare community** for domain expertise
-- **Open source contributors** for foundational libraries
+- **Community contributors** for foundational libraries
 
 ---
 
