@@ -11,7 +11,7 @@ LinkedIn: linkedin.com/in/durai-rajamanickam
 
 [![Platform](https://img.shields.io/badge/Platform-Databricks-orange)](https://databricks.com)
 [![Python](https://img.shields.io/badge/Python-3.8+-blue)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/License-Custom-green)](LICENSE)
 [![Health Check](https://img.shields.io/badge/Health-98.5%25-brightgreen)](docs/troubleshooting.md)
 
 A production-ready, AI-powered data engineering platform designed specifically for healthcare data processing. Built on Databricks with Unity Catalog, this platform delivers **40% reduction in manual fixes**, **10-15% cost savings**, and **99.2% SLA reliability** for Medicaid/Medicare data workflows.
@@ -329,7 +329,11 @@ We welcome contributions! Areas for contribution:
 
 ## 📄 **License**
 
-This project is licensed under the MIT License - see the **[LICENSE](LICENSE)** file for details.
+This project is licensed under a Custom License - see the **[LICENSE](LICENSE)** file for details.
+
+**For Research and Learning**: Free to use for non-commercial research and educational purposes.
+
+**For Commercial Use**: Written permission required from the author. Contact durai@infinidatum.net for commercial licensing.
 
 ---
 
